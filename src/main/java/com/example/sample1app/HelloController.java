@@ -3,10 +3,12 @@ package com.example.sample1app;
 import java.util.List;
 import java.util.Optional;
 
-import javax.swing.text.html.Option;
+import javax.naming.Binding;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,7 @@ import com.example.sample1app.repositories.PersonRepository;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 
 @Controller
 public class HelloController {
@@ -61,10 +64,22 @@ public class HelloController {
     @RequestMapping(value = "/", method = RequestMethod.POST)
     @Transactional
     public ModelAndView form(
-            @ModelAttribute("formModel") Person Person,
+            @ModelAttribute("formModel") @Validated Person person,
+            BindingResult result,
             ModelAndView mav) {
-        repository.saveAndFlush(Person);
-        return new ModelAndView("redirect:/");
+        ModelAndView res = null;
+        System.out.println(result.getFieldErrors());
+        if (!result.hasErrors()) {
+            repository.saveAndFlush(person);
+            res = new ModelAndView("redirect:/");
+        } else {
+            mav.setViewName("index");
+            mav.addObject("msg", "sorry, error is occured...");
+            Iterable<Person> list = repository.findAll();
+            mav.addObject("data", list);
+            res = mav;
+        }
+        return res;
     }
 
     @RequestMapping(value = "/edit/{id}", method = RequestMethod.GET)
